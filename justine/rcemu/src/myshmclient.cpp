@@ -88,7 +88,7 @@ std::vector<justine::sampleclient::MyShmClient::Cop> justine::sampleclient::MySh
 
   boost::system::error_code err;
 
-  size_t length = std::sprintf ( data, "<init guided %s 10 c>", m_teamname.c_str() );
+  size_t length = std::sprintf ( data, "<init guided %s 6 c>", m_teamname.c_str() );
 
   socket.send ( boost::asio::buffer ( data, length ) );
 
@@ -339,25 +339,40 @@ void justine::sampleclient::MyShmClient::start10 ( boost::asio::io_service& io_s
 
   std::vector<Gangster> gngstrs;
 
+  int csoport = 2, hoze = 0;
+  unsigned it = 0;
+  unsigned supercop[csoport];
+
+  
   for ( ;; )
     {
       std::this_thread::sleep_for ( std::chrono::milliseconds ( 200 ) );
 
-      for ( auto cop:cops )
+      for (it = 0 ; it < cops.size(); ++it) //auto cop:cops
         {
-          car ( socket, cop, &f, &t, &s );
+	  //it = 0; it < cops.size(); ++it
 
-          gngstrs = gangsters ( socket, cop, t );
-
-          if ( gngstrs.size() > 0 )
-            g = gngstrs[0].to;
-          else
-            g = 0;
-
-          if ( g > 0 )
+          car ( socket, cops[it], &f, &t, &s );
+	  if( it < csoport){
+	  
+	  gngstrs = gangsters ( socket, cops[it], t );   
+	    
+          if ( gngstrs.size() > 0 ){
+            hoze = 0;
+	    supercop[it] = gngstrs[hoze].to;
+		}
+	  }
+	  if (it!=0){
+	 for(int j = 0; j < it; ++j){
+	 
+	   if(supercop[j]==supercop[it])
+	     supercop[it] = gngstrs[++hoze].to;
+	 }
+	  }
+          if ( supercop[it%csoport] > 0 )
             {
 
-              std::vector<osmium::unsigned_object_id_type> path = hasDijkstraPath ( t, g );
+              std::vector<osmium::unsigned_object_id_type> path = hasDijkstraPath ( t, supercop[it%csoport]);
 
               if ( path.size() > 1 )
                 {
@@ -365,8 +380,9 @@ void justine::sampleclient::MyShmClient::start10 ( boost::asio::io_service& io_s
                   std::copy ( path.begin(), path.end(),
                               std::ostream_iterator<osmium::unsigned_object_id_type> ( std::cout, " -> " ) );
 
-                  route ( socket, cop, path );
+                  route ( socket, cops[it], path );
                 }
+                
             }
         }
     }
